@@ -22,6 +22,10 @@ func (h *Handler) Register(router *router.Router[*core.RequestEvent]) {
 		{
 			auth.GET("/", h.AuthHandler)
 		}
+		stream := api.Group("/stream")
+		{
+			stream.POST("/watch", h.WatchStreamHandler)
+		}
 
 	}
 }
