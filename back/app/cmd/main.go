@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	application "gitlab.yurtal.tech/company/blitz/business-card/back/internal/app"
@@ -16,4 +17,5 @@ func main() {
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Helllo world")
 }
