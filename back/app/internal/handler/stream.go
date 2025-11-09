@@ -143,3 +143,64 @@ func (h *Handler) GetAllStreamHandler(e *core.RequestEvent) error {
 
 	return e.JSON(http.StatusOK, resp)
 }
+
+func (h *Handler) GetCategoriesHandler(e *core.RequestEvent) error {
+	categories, err := h.service.Stream().GetCategories()
+	if err != nil {
+		h.logger.Error("failed to get categories", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"categories": categories,
+	})
+}
+
+func (h *Handler) GetCountriesHandler(e *core.RequestEvent) error {
+	countries, err := h.service.Stream().GetCountries()
+	if err != nil {
+		h.logger.Error("failed to get countries", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"countries": countries,
+	})
+}
+
+func (h *Handler) GetLanguagesHandler(e *core.RequestEvent) error {
+	languages, err := h.service.Stream().GetLanguages()
+	if err != nil {
+		h.logger.Error("failed to get languages", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return e.JSON(http.StatusOK, map[string]interface{}{
+		"languages": languages,
+	})
+}
+
+func (h *Handler) SearchStreamHandler(e *core.RequestEvent) error {
+	var req model.SearchStreamRequest
+	if err := json.NewDecoder(e.Request.Body).Decode(&req); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid request body",
+		})
+	}
+
+	resp, err := h.service.Stream().SearchStreams(&req)
+	if err != nil {
+		h.logger.Error("failed to search streams", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return e.JSON(http.StatusOK, resp)
+}

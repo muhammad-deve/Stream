@@ -30,6 +30,10 @@ func (h *Handler) Register(router *router.Router[*core.RequestEvent]) {
 			stream.POST("/recommend", h.RecommendStreamHandler)
 			stream.POST("/category", h.CategoryStreamHandler)
 			stream.POST("/all", h.GetAllStreamHandler)
+			stream.GET("/categories", h.GetCategoriesHandler)
+			stream.GET("/countries", h.GetCountriesHandler)
+			stream.GET("/languages", h.GetLanguagesHandler)
+			stream.POST("/search", h.SearchStreamHandler)
 		}
 
 	}

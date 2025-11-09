@@ -42,42 +42,39 @@ export interface ApiFeaturedChannel {
   language: ApiLanguage | null;
 }
 
-// Fetch categories from PocketBase
+// Fetch categories from backend API
 export const fetchCategories = async (): Promise<string[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/collections/categories/records?perPage=500');
+    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/categories');
     if (!response.ok) throw new Error('Failed to fetch categories');
     const data = await response.json();
-    const categoryNames = data.items.map((item: any) => item.name_1);
-    return ['All', ...categoryNames];
+    return ['All', ...data.categories];
   } catch (error) {
     console.error('Error fetching categories:', error);
     return ['All'];
   }
 };
 
-// Fetch countries from PocketBase
+// Fetch countries from backend API
 export const fetchCountries = async (): Promise<string[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/collections/countries/records?perPage=500');
+    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/countries');
     if (!response.ok) throw new Error('Failed to fetch countries');
     const data = await response.json();
-    const countryNames = data.items.map((item: any) => item.name);
-    return ['All', ...countryNames];
+    return ['All', ...data.countries];
   } catch (error) {
     console.error('Error fetching countries:', error);
     return ['All'];
   }
 };
 
-// Fetch languages from PocketBase
+// Fetch languages from backend API
 export const fetchLanguages = async (): Promise<string[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/collections/languages/records?perPage=500');
+    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/languages');
     if (!response.ok) throw new Error('Failed to fetch languages');
     const data = await response.json();
-    const languageNames = data.items.map((item: any) => item.name);
-    return ['All', ...languageNames];
+    return ['All', ...data.languages];
   } catch (error) {
     console.error('Error fetching languages:', error);
     return ['All'];
@@ -215,13 +212,6 @@ export const filterChannels = (category: string, country: string, language: stri
   return filtered;
 };
 
-export const searchChannels = (query: string) => 
-  allChannels.filter(c => 
-    c.name.toLowerCase().includes(query.toLowerCase()) ||
-    c.description.toLowerCase().includes(query.toLowerCase()) ||
-    c.category.toLowerCase().includes(query.toLowerCase())
-  );
-
 // Fetch featured channels from API
 export const fetchFeaturedChannels = async (): Promise<Channel[]> => {
   try {
@@ -355,6 +345,12 @@ export interface AllStreamsResponse {
   total_pages: number;
 }
 
+// Response type for search results
+export interface SearchResponse {
+  channels: Channel[];
+  total: number;
+}
+
 // Fetch all streams with filtering and pagination
 export const fetchAllStreams = async (
   category: string,
@@ -410,6 +406,53 @@ export const fetchAllStreams = async (
       page: 1,
       per_page: 24,
       total_pages: 0,
+    };
+  }
+};
+
+// Search for channels by name or title
+export const searchChannels = async (query: string): Promise<SearchResponse> => {
+  try {
+    if (!query || query.trim() === '') {
+      return { channels: [], total: 0 };
+    }
+
+    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: query.trim() }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to search channels');
+    }
+
+    const data = await response.json();
+
+    // Convert API response channels to frontend Channel format
+    const channels = data.channels.map((apiChannel: ApiFeaturedChannel) => ({
+      id: apiChannel.channel,
+      name: apiChannel.title,
+      description: apiChannel.title,
+      category: apiChannel.category?.name_1 || 'General',
+      country: apiChannel.country?.name || 'Unknown',
+      language: apiChannel.language?.name || 'Unknown',
+      logo: apiChannel.logo?.url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=200&h=200&fit=crop',
+      streamUrl: apiChannel.url,
+      featured: false
+    }));
+
+    return {
+      channels,
+      total: data.total,
+    };
+  } catch (error) {
+    console.error('Error searching channels:', error);
+    return {
+      channels: [],
+      total: 0,
     };
   }
 };

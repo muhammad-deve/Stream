@@ -23,6 +23,7 @@ const Browse = () => {
   const [totalChannels, setTotalChannels] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [filtersLoading, setFiltersLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>(['All']);
   const [countries, setCountries] = useState<string[]>(['All']);
   const [languages, setLanguages] = useState<string[]>(['All']);
@@ -31,14 +32,22 @@ const Browse = () => {
   // Fetch filter options from PocketBase on mount
   useEffect(() => {
     const loadFilters = async () => {
-      const [cats, ctrs, langs] = await Promise.all([
-        fetchCategories(),
-        fetchCountries(),
-        fetchLanguages()
-      ]);
-      setCategories(cats);
-      setCountries(ctrs);
-      setLanguages(langs);
+      setFiltersLoading(true);
+      try {
+        const [cats, ctrs, langs] = await Promise.all([
+          fetchCategories(),
+          fetchCountries(),
+          fetchLanguages()
+        ]);
+        setCategories(cats);
+        setCountries(ctrs);
+        setLanguages(langs);
+      } catch (error) {
+        console.error('Error loading filters:', error);
+        // Keep default 'All' values if fetch fails
+      } finally {
+        setFiltersLoading(false);
+      }
     };
     loadFilters();
   }, []);
@@ -53,17 +62,25 @@ const Browse = () => {
       }
 
       setLoading(true);
-      const result = await fetchAllStreams(
-        selectedCategory,
-        selectedCountry,
-        selectedLanguage,
-        currentPage
-      );
-      
-      setDisplayedChannels(result.channels);
-      setTotalChannels(result.total);
-      setTotalPages(result.total_pages);
-      setLoading(false);
+      try {
+        const result = await fetchAllStreams(
+          selectedCategory,
+          selectedCountry,
+          selectedLanguage,
+          currentPage
+        );
+        
+        setDisplayedChannels(result.channels);
+        setTotalChannels(result.total);
+        setTotalPages(result.total_pages);
+      } catch (error) {
+        console.error('Error loading channels:', error);
+        setDisplayedChannels([]);
+        setTotalChannels(0);
+        setTotalPages(0);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadChannels();
@@ -111,9 +128,11 @@ const Browse = () => {
         <div className="sticky top-16 z-40 bg-background py-4 mb-8 flex flex-wrap gap-4 items-center border-b border-border">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">{t("browse.category")}:</span>
-            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+            <Select value={selectedCategory} onValueChange={handleCategoryChange} disabled={filtersLoading}>
               <SelectTrigger className="w-[180px] bg-secondary border-border">
-                <SelectValue />
+                <SelectValue>
+                  {filtersLoading ? "Loading..." : selectedCategory === "All" ? t("filter.all") : selectedCategory}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 {categories.map((category) => (
@@ -127,9 +146,11 @@ const Browse = () => {
 
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">{t("browse.country")}:</span>
-            <Select value={selectedCountry} onValueChange={handleCountryChange}>
+            <Select value={selectedCountry} onValueChange={handleCountryChange} disabled={filtersLoading}>
               <SelectTrigger className="w-[180px] bg-secondary border-border">
-                <SelectValue />
+                <SelectValue>
+                  {filtersLoading ? "Loading..." : selectedCountry === "All" ? t("filter.all") : selectedCountry}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 {countries.map((country) => (
@@ -143,9 +164,11 @@ const Browse = () => {
 
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">{t("browse.language")}:</span>
-            <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+            <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={filtersLoading}>
               <SelectTrigger className="w-[180px] bg-secondary border-border">
-                <SelectValue />
+                <SelectValue>
+                  {filtersLoading ? "Loading..." : selectedLanguage === "All" ? t("filter.all") : selectedLanguage}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 {languages.map((language) => (

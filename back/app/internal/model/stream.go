@@ -62,3 +62,11 @@ type AllStreamsResponse struct {
 	TotalPages int                    `json:"total_pages"`
 }
 
+type SearchStreamRequest struct {
+	Query string `json:"query"`
+}
+
+type SearchStreamResponse struct {
+	Channels []*WatchStreamResponse `json:"channels"`
+	Total    int                    `json:"total"`
+}

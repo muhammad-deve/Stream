@@ -21,13 +21,21 @@ const Home = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const [cats, channels] = await Promise.all([
-        fetchCategories(),
-        fetchFeaturedChannels()
-      ]);
-      setCategories(cats);
-      setFeaturedChannels(channels);
-      setLoading(false);
+      try {
+        const [cats, channels] = await Promise.all([
+          fetchCategories(),
+          fetchFeaturedChannels()
+        ]);
+        setCategories(cats);
+        setFeaturedChannels(channels);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        // Keep default values if fetch fails
+        setCategories(["All"]);
+        setFeaturedChannels([]);
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, []);
@@ -36,9 +44,15 @@ const Home = () => {
   useEffect(() => {
     const loadCategoryChannels = async () => {
       setCategoryLoading(true);
-      const channels = await fetchChannelsByCategory(selectedCategory);
-      setCategoryChannels(channels);
-      setCategoryLoading(false);
+      try {
+        const channels = await fetchChannelsByCategory(selectedCategory);
+        setCategoryChannels(channels);
+      } catch (error) {
+        console.error('Error loading category channels:', error);
+        setCategoryChannels([]);
+      } finally {
+        setCategoryLoading(false);
+      }
     };
     loadCategoryChannels();
   }, [selectedCategory]);

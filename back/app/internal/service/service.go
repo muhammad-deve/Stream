@@ -16,6 +16,10 @@ type StreamI interface {
 	GetChannelsByCategory(categoryName string) ([]*model.WatchStreamResponse, error)
 	GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*model.WatchStreamResponse, error)
 	GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsResponse, error)
+	GetCategories() ([]string, error)
+	GetCountries() ([]string, error)
+	GetLanguages() ([]string, error)
+	SearchStreams(req *model.SearchStreamRequest) (*model.SearchStreamResponse, error)
 }
 
 type I interface {

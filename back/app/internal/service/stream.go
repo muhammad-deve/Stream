@@ -485,3 +485,152 @@ func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsR
 		TotalPages: totalPages,
 	}, nil
 }
+
+// GetCategories retrieves all unique categories from database
+func (s *Stream) GetCategories() ([]string, error) {
+	records, err := s.app.FindRecordsByFilter("categories", "", "name_1", 0, 0, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch categories: %w", err)
+	}
+	
+	// Use map to track unique categories
+	uniqueMap := make(map[string]bool)
+	var categories []string
+	
+	for _, record := range records {
+		name := record.GetString("name_1")
+		if name != "" && !uniqueMap[name] {
+			uniqueMap[name] = true
+			categories = append(categories, name)
+		}
+	}
+	
+	return categories, nil
+}
+
+// GetCountries retrieves all unique countries from database
+func (s *Stream) GetCountries() ([]string, error) {
+	records, err := s.app.FindRecordsByFilter("countries", "", "name", 0, 0, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch countries: %w", err)
+	}
+	
+	// Use map to track unique countries
+	uniqueMap := make(map[string]bool)
+	var countries []string
+	
+	for _, record := range records {
+		name := record.GetString("name")
+		if name != "" && !uniqueMap[name] {
+			uniqueMap[name] = true
+			countries = append(countries, name)
+		}
+	}
+	
+	return countries, nil
+}
+
+// GetLanguages retrieves all unique languages from database
+func (s *Stream) GetLanguages() ([]string, error) {
+	records, err := s.app.FindRecordsByFilter("languages", "", "name", 0, 0, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch languages: %w", err)
+	}
+	
+	// Use map to track unique languages
+	uniqueMap := make(map[string]bool)
+	var languages []string
+	
+	for _, record := range records {
+		name := record.GetString("name")
+		if name != "" && !uniqueMap[name] {
+			uniqueMap[name] = true
+			languages = append(languages, name)
+		}
+	}
+	
+	return languages, nil
+}
+
+// SearchStreams searches for channels by title (case-insensitive)
+func (s *Stream) SearchStreams(req *model.SearchStreamRequest) (*model.SearchStreamResponse, error) {
+	if req.Query == "" {
+		return &model.SearchStreamResponse{
+			Channels: []*model.WatchStreamResponse{},
+			Total:    0,
+		}, nil
+	}
+
+	// Search by title field with case-insensitive partial matching
+	// Using ?~ for case-insensitive regex matching in PocketBase
+	escapedQuery := strings.ReplaceAll(req.Query, "'", "\\'")
+	filter := fmt.Sprintf("title ?~ '%s' || id ?~ '%s'", 
+		escapedQuery, 
+		escapedQuery)
+	
+	// Parameters: collection, filter, sort, limit, offset, params
+	records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", 20, 0, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search channels: %w", err)
+	}
+
+	var channels []*model.WatchStreamResponse
+	for _, record := range records {
+		response := &model.WatchStreamResponse{
+			Channel: record.GetString("id"),
+			Title:   record.GetString("title"),
+			URL:     record.GetString("url"),
+		}
+
+		// Expand quality
+		if qualityID := record.GetString("quality"); qualityID != "" {
+			if qualityRecord, err := s.app.FindRecordById("qualities", qualityID); err == nil {
+				response.Quality = qualityRecord.GetString("name")
+			}
+		}
+
+		// Expand logo
+		if logoID := record.GetString("logo"); logoID != "" {
+			if logoRecord, err := s.app.FindRecordById("logos", logoID); err == nil {
+				response.Logo = &model.Logo{
+					URL: logoRecord.GetString("logo_url"),
+				}
+			}
+		}
+
+		// Expand category
+		if categoryID := record.GetString("category"); categoryID != "" {
+			if categoryRecord, err := s.app.FindRecordById("categories", categoryID); err == nil {
+				response.Category = &model.Category{
+					Name1: categoryRecord.GetString("name_1"),
+					Name2: categoryRecord.GetString("name_2"),
+				}
+			}
+		}
+
+		// Expand country
+		if countryID := record.GetString("country"); countryID != "" {
+			if countryRecord, err := s.app.FindRecordById("countries", countryID); err == nil {
+				response.Country = &model.Country{
+					Name: countryRecord.GetString("name"),
+				}
+			}
+		}
+
+		// Expand language
+		if languageID := record.GetString("language"); languageID != "" {
+			if languageRecord, err := s.app.FindRecordById("languages", languageID); err == nil {
+				response.Language = &model.Language{
+					Name: languageRecord.GetString("name"),
+				}
+			}
+		}
+
+		channels = append(channels, response)
+	}
+
+	return &model.SearchStreamResponse{
+		Channels: channels,
+		Total:    len(channels),
+	}, nil
+}
