@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/filter"
 	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/logo"
 	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/parse"
 	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/scrape"
@@ -24,6 +25,9 @@ func main() {
 
 	// Register scrape command
 	app.RootCmd.AddCommand(scrape.ScrapeCommand(app))
+
+	// Register filter command
+	app.RootCmd.AddCommand(filter.FilterCommand(app))
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)

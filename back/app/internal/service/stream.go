@@ -255,10 +255,11 @@ func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStrea
 	
 	var filter string
 	
-	// If category is "All" or "all", just exclude featured channels and get best quality
+	// If category is "All" or "all", just get working channels
 	if strings.ToLower(categoryName) == "all" || categoryName == "" {
+		filter = "is_working = true"
 		if len(excludeFilters) > 0 {
-			filter = strings.Join(excludeFilters, " && ")
+			filter = fmt.Sprintf("%s && (%s)", filter, strings.Join(excludeFilters, " && "))
 		}
 	} else {
 		// Get category ID by name
@@ -269,8 +270,8 @@ func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStrea
 		
 		categoryID := categoryRecord.Id
 		
-		// Build the filter
-		filter = fmt.Sprintf("category = '%s'", categoryID)
+		// Build the filter - only working channels
+		filter = fmt.Sprintf("category = '%s' && is_working = true", categoryID)
 		if len(excludeFilters) > 0 {
 			filter = fmt.Sprintf("%s && (%s)", filter, strings.Join(excludeFilters, " && "))
 		}
@@ -324,7 +325,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 	
 	// Strategy 1: Same language + same category
 	if languageID != "" && categoryID != "" {
-		filter := fmt.Sprintf("channel != '%s' && language = '%s' && category = '%s'", req.Channel, languageID, categoryID)
+		filter := fmt.Sprintf("channel != '%s' && language = '%s' && category = '%s' && is_working = true", req.Channel, languageID, categoryID)
 		records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", 4, 0, nil)
 		if err == nil {
 			for _, record := range records {
@@ -340,7 +341,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 	
 	// Strategy 2: Same language (any category) - if we need more channels
 	if languageID != "" && len(allResponses) < 4 {
-		filter := fmt.Sprintf("channel != '%s' && language = '%s'", req.Channel, languageID)
+		filter := fmt.Sprintf("channel != '%s' && language = '%s' && is_working = true", req.Channel, languageID)
 		needed := 4 - len(allResponses)
 		records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", needed+10, 0, nil)
 		if err == nil {
@@ -362,7 +363,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 	
 	// If we still need more, Strategy 3: Same category (any language)
 	if categoryID != "" && len(allResponses) < 4 {
-		filter := fmt.Sprintf("channel != '%s' && category = '%s'", req.Channel, categoryID)
+		filter := fmt.Sprintf("channel != '%s' && category = '%s' && is_working = true", req.Channel, categoryID)
 		needed := 4 - len(allResponses)
 		records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", needed+10, 0, nil)
 		if err == nil {
@@ -384,7 +385,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 	
 	// If we still don't have enough, get any high-quality channels
 	if len(allResponses) < 4 {
-		filter := fmt.Sprintf("channel != '%s'", req.Channel)
+		filter := fmt.Sprintf("channel != '%s' && is_working = true", req.Channel)
 		needed := 4 - len(allResponses)
 		records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", needed+10, 0, nil)
 		if err == nil {
@@ -413,6 +414,9 @@ func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsR
 	
 	var filters []string
 	
+	// Always filter by working channels
+	filters = append(filters, "is_working = true")
+	
 	// Filter by category if not "all"
 	if req.Category != "" && strings.ToLower(req.Category) != "all" {
 		categoryRecord, err := s.app.FindFirstRecordByFilter("categories", fmt.Sprintf("name_1 = '%s'", strings.ToLower(req.Category)))
@@ -438,10 +442,7 @@ func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsR
 	}
 	
 	// Build the filter
-	filter := ""
-	if len(filters) > 0 {
-		filter = strings.Join(filters, " && ")
-	}
+	filter := strings.Join(filters, " && ")
 	
 	// First, get total count
 	totalRecords, err := s.app.FindRecordsByFilter("channels", filter, "", 0, 0, nil)
@@ -564,7 +565,7 @@ func (s *Stream) SearchStreams(req *model.SearchStreamRequest) (*model.SearchStr
 	// Search by title field with case-insensitive partial matching
 	// Using ?~ for case-insensitive regex matching in PocketBase
 	escapedQuery := strings.ReplaceAll(req.Query, "'", "\\'")
-	filter := fmt.Sprintf("title ?~ '%s' || id ?~ '%s'", 
+	filter := fmt.Sprintf("(title ?~ '%s' || id ?~ '%s') && is_working = true", 
 		escapedQuery, 
 		escapedQuery)
 	
