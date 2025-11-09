@@ -25,6 +25,11 @@ func (h *Handler) Register(router *router.Router[*core.RequestEvent]) {
 		stream := api.Group("/stream")
 		{
 			stream.POST("/watch", h.WatchStreamHandler)
+			stream.GET("/featured", h.FeaturedStreamHandler)
+			stream.GET("/channel/:name", h.GetChannelHandler)
+			stream.POST("/recommend", h.RecommendStreamHandler)
+			stream.POST("/category", h.CategoryStreamHandler)
+			stream.POST("/all", h.GetAllStreamHandler)
 		}
 
 	}

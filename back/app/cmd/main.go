@@ -5,6 +5,7 @@ import (
 
 	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/logo"
 	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/parse"
+	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/scrape"
 	application "gitlab.yurtal.tech/company/blitz/business-card/back/internal/app"
 	"gitlab.yurtal.tech/company/blitz/business-card/back/internal/config"
 )
@@ -20,6 +21,9 @@ func main() {
 
 	// Register logo command
 	app.RootCmd.AddCommand(logo.LogoCommand(app))
+
+	// Register scrape command
+	app.RootCmd.AddCommand(scrape.ScrapeCommand(app))
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)

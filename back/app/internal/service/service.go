@@ -11,6 +11,11 @@ type AuthorizationI interface {
 
 type StreamI interface {
 	WatchStream(req *model.WatchStreamRequest) (*model.WatchStreamResponse, error)
+	GetFeaturedChannels() ([]*model.WatchStreamResponse, error)
+	GetChannelByName(channelName string) (*model.WatchStreamResponse, error)
+	GetChannelsByCategory(categoryName string) ([]*model.WatchStreamResponse, error)
+	GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*model.WatchStreamResponse, error)
+	GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsResponse, error)
 }
 
 type I interface {

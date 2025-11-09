@@ -35,3 +35,30 @@ type WatchStreamResponse struct {
 	Country  *Country  `json:"country"`
 	Language *Language `json:"language"`
 }
+
+type CategoryStreamRequest struct {
+	CategoryName string `json:"category_name"`
+}
+
+type RecommendStreamRequest struct {
+	Channel      string `json:"channel"`
+	CategoryName string `json:"category_name"`
+	CountryName  string `json:"country_name"`
+	LanguageName string `json:"language_name"`
+}
+
+type AllStreamsRequest struct {
+	Category string `json:"category"`
+	Country  string `json:"country"`
+	Language string `json:"language"`
+	Page     int    `json:"page"`
+}
+
+type AllStreamsResponse struct {
+	Channels   []*WatchStreamResponse `json:"channels"`
+	Total      int                    `json:"total"`
+	Page       int                    `json:"page"`
+	PerPage    int                    `json:"per_page"`
+	TotalPages int                    `json:"total_pages"`
+}
+

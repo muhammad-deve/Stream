@@ -32,3 +32,114 @@ func (h *Handler) WatchStreamHandler(e *core.RequestEvent) error {
 
 	return e.JSON(http.StatusOK, resp)
 }
+
+func (h *Handler) FeaturedStreamHandler(e *core.RequestEvent) error {
+	resp, err := h.service.Stream().GetFeaturedChannels()
+	if err != nil {
+		h.logger.Error("failed to get featured channels", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return e.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) GetChannelHandler(e *core.RequestEvent) error {
+	channelName := e.Request.PathValue("name")
+	if channelName == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "channel name is required",
+		})
+	}
+
+	resp, err := h.service.Stream().GetChannelByName(channelName)
+	if err != nil {
+		h.logger.Error("failed to get channel", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	if resp == nil {
+		return e.JSON(http.StatusNotFound, map[string]string{
+			"error": "channel not found",
+		})
+	}
+
+	return e.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) CategoryStreamHandler(e *core.RequestEvent) error {
+	var req model.CategoryStreamRequest
+	if err := json.NewDecoder(e.Request.Body).Decode(&req); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+
+	if req.CategoryName == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "category_name is required",
+		})
+	}
+
+	resp, err := h.service.Stream().GetChannelsByCategory(req.CategoryName)
+	if err != nil {
+		h.logger.Error("failed to get channels by category", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return e.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) RecommendStreamHandler(e *core.RequestEvent) error {
+	var req model.RecommendStreamRequest
+	if err := json.NewDecoder(e.Request.Body).Decode(&req); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+
+	if req.Channel == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "channel is required",
+		})
+	}
+
+	resp, err := h.service.Stream().GetRecommendedChannels(&req)
+	if err != nil {
+		h.logger.Error("failed to get recommended channels", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return e.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) GetAllStreamHandler(e *core.RequestEvent) error {
+	var req model.AllStreamsRequest
+	if err := json.NewDecoder(e.Request.Body).Decode(&req); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+
+	// Default to page 1 if not provided
+	if req.Page < 1 {
+		req.Page = 1
+	}
+
+	resp, err := h.service.Stream().GetAllStreams(&req)
+	if err != nil {
+		h.logger.Error("failed to get all streams", "error", err)
+		return e.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return e.JSON(http.StatusOK, resp)
+}
