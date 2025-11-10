@@ -1,0 +1,22 @@
+[0;1;32m●[0m containerd.service - containerd container runtime
+     Loaded: loaded (]8;;file://vmi2877544/usr/lib/systemd/system/containerd.service/usr/lib/systemd/system/containerd.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Mon 2025-11-10 15:00:04 CET; 14ms ago
+       Docs: ]8;;https://containerd.iohttps://containerd.io]8;;
+    Process: 1162142 ExecStartPre=/sbin/modprobe overlay (code=exited, status=0/SUCCESS)
+   Main PID: 1162144 (containerd)
+      Tasks: 9
+     Memory: 13.8M (peak: 14.7M)
+        CPU: 93ms
+     CGroup: /system.slice/containerd.service
+             └─[0;38;5;245m1162144 /usr/bin/containerd[0m
+
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010127045+01:00" level=info msg="loading plugin \"io.containerd.tracing.processor.v1.otlp\"..." type=io.containerd.tracing.processor.v1
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010142554+01:00" level=info msg="skip loading plugin \"io.containerd.tracing.processor.v1.otlp\"..." error="skip plugin: tracing endpoint not configured" type=io.containerd.tracing.processor.v1
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010152202+01:00" level=info msg="loading plugin \"io.containerd.internal.v1.tracing\"..." type=io.containerd.internal.v1
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010164104+01:00" level=info msg="skip loading plugin \"io.containerd.internal.v1.tracing\"..." error="skip plugin: tracing endpoint not configured" type=io.containerd.internal.v1
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010173893+01:00" level=info msg="loading plugin \"io.containerd.grpc.v1.healthcheck\"..." type=io.containerd.grpc.v1
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010185885+01:00" level=info msg="loading plugin \"io.containerd.nri.v1.nri\"..." type=io.containerd.nri.v1
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010196345+01:00" level=info msg="NRI interface is disabled by configuration."
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010560025+01:00" level=info msg=serving... address=/run/containerd/containerd.sock.ttrpc
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010624835+01:00" level=info msg=serving... address=/run/containerd/containerd.sock
+Nov 10 15:00:04 vmi2877544 containerd[1162144]: time="2025-11-10T15:00:04.010680690+01:00" level=info msg="containerd successfully booted in 0.031978s"
