@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/delete"
 	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/filter"
 	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/logo"
 	"gitlab.yurtal.tech/company/blitz/business-card/back/cmd/parse"
@@ -28,6 +29,9 @@ func main() {
 
 	// Register filter command
 	app.RootCmd.AddCommand(filter.FilterCommand(app))
+
+	// Register delete command
+	app.RootCmd.AddCommand(delete.DeleteCommand(app))
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)

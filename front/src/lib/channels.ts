@@ -456,3 +456,27 @@ export const searchChannels = async (query: string): Promise<SearchResponse> => 
     };
   }
 };
+
+// Resolve token to actual stream URL
+export const playStream = async (token: string): Promise<string | null> => {
+  try {
+    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/play', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to resolve stream token - token may be expired');
+      return null;
+    }
+
+    const data = await response.json();
+    return data.url;
+  } catch (error) {
+    console.error('Error resolving stream token:', error);
+    return null;
+  }
+};

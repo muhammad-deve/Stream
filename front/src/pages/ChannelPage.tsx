@@ -1,7 +1,7 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import Header from "@/components/Header";
-import { fetchRecommendedChannels, fetchChannelByName, Channel, ApiFeaturedChannel } from "@/lib/channels";
+import { fetchRecommendedChannels, fetchChannelByName, Channel, ApiFeaturedChannel, playStream } from "@/lib/channels";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Globe, Languages } from "lucide-react";
@@ -71,7 +71,7 @@ const ChannelPage = () => {
     if (!channel || !videoRef.current) return;
 
     const video = videoRef.current;
-    const streamUrl = channel.streamUrl;
+    const token = channel.streamUrl; // This is the UUID token
 
     // Cleanup previous instance
     if (hlsRef.current) {
@@ -79,46 +79,64 @@ const ChannelPage = () => {
       hlsRef.current = null;
     }
 
-    // Check if HLS is supported
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-      });
-      
-      hlsRef.current = hls;
-      hls.loadSource(streamUrl);
-      hls.attachMedia(video);
-      
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(err => console.log("Autoplay prevented:", err));
-      });
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              console.error("Network error encountered, trying to recover...");
-              hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              console.error("Media error encountered, trying to recover...");
-              hls.recoverMediaError();
-              break;
-            default:
-              console.error("Fatal error, cannot recover");
-              hls.destroy();
-              break;
-          }
+    // Resolve token to actual URL and play
+    const setupPlayer = async () => {
+      try {
+        // Call backend to resolve token to actual URL
+        const actualUrl = await playStream(token);
+        
+        if (!actualUrl) {
+          console.error("Failed to resolve stream URL - token may be expired");
+          // You could show an error message to user here
+          return;
         }
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // For Safari (native HLS support)
-      video.src = streamUrl;
-      video.addEventListener('loadedmetadata', () => {
-        video.play().catch(err => console.log("Autoplay prevented:", err));
-      });
-    }
+
+        // Check if HLS is supported
+        if (Hls.isSupported()) {
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+          });
+          
+          hlsRef.current = hls;
+          hls.loadSource(actualUrl);
+          hls.attachMedia(video);
+          
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play().catch(err => console.log("Autoplay prevented:", err));
+          });
+
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) {
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  console.error("Network error encountered, trying to recover...");
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  console.error("Media error encountered, trying to recover...");
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  console.error("Fatal error, cannot recover");
+                  hls.destroy();
+                  break;
+              }
+            }
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // For Safari (native HLS support)
+          video.src = actualUrl;
+          video.addEventListener('loadedmetadata', () => {
+            video.play().catch(err => console.log("Autoplay prevented:", err));
+          });
+        }
+      } catch (error) {
+        console.error("Error setting up player:", error);
+      }
+    };
+
+    setupPlayer();
 
     // Cleanup on unmount
     return () => {

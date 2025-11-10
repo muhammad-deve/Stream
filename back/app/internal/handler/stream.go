@@ -204,3 +204,28 @@ func (h *Handler) SearchStreamHandler(e *core.RequestEvent) error {
 
 	return e.JSON(http.StatusOK, resp)
 }
+
+func (h *Handler) PlayStreamHandler(e *core.RequestEvent) error {
+	var req model.PlayStreamRequest
+	if err := json.NewDecoder(e.Request.Body).Decode(&req); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+
+	if req.Token == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": "token is required",
+		})
+	}
+
+	resp, err := h.service.Stream().PlayStream(&req)
+	if err != nil {
+		h.logger.Error("failed to play stream", "error", err)
+		return e.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "invalid or expired token",
+		})
+	}
+
+	return e.JSON(http.StatusOK, resp)
+}

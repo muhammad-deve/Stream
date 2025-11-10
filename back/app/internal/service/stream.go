@@ -12,12 +12,23 @@ import (
 
 // Note: strings, core, and config are used in GetFeaturedChannels and buildChannelResponse methods
 
-type Stream struct {
-	app *pocketbase.PocketBase
+// RedisClientI interface for Redis operations
+type RedisClientI interface {
+	GenerateURLToken(url string) (string, error)
+	GetURLByToken(token string) (string, error)
+	DeleteToken(token string) error
 }
 
-func NewStream(app *pocketbase.PocketBase) *Stream {
-	return &Stream{app: app}
+type Stream struct {
+	app         *pocketbase.PocketBase
+	redisClient RedisClientI
+}
+
+func NewStream(app *pocketbase.PocketBase, redisClient RedisClientI) *Stream {
+	return &Stream{
+		app:         app,
+		redisClient: redisClient,
+	}
 }
 
 func (s *Stream) WatchStream(req *model.WatchStreamRequest) (*model.WatchStreamResponse, error) {
@@ -32,9 +43,15 @@ func (s *Stream) WatchStream(req *model.WatchStreamRequest) (*model.WatchStreamR
 		return nil, fmt.Errorf("channel not found")
 	}
 
-	url := record.GetString("url")
-	if url == "" {
+	actualURL := record.GetString("url")
+	if actualURL == "" {
 		return nil, fmt.Errorf("channel url is empty")
+	}
+
+	// Generate token for the URL
+	token, err := s.redisClient.GenerateURLToken(actualURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate URL token: %w", err)
 	}
 
 	title := record.GetString("title")
@@ -108,7 +125,7 @@ func (s *Stream) WatchStream(req *model.WatchStreamRequest) (*model.WatchStreamR
 
 	return &model.WatchStreamResponse{
 		Channel:  channel,
-		URL:      url,
+		URL:      token,
 		Quality:  qualityValue,
 		Title:    title,
 		Logo:     logo,
@@ -121,8 +138,18 @@ func (s *Stream) WatchStream(req *model.WatchStreamRequest) (*model.WatchStreamR
 // buildChannelResponse is a helper method to build a WatchStreamResponse from a channel record
 func (s *Stream) buildChannelResponse(record *core.Record) *model.WatchStreamResponse {
 	channel := record.GetString("channel")
-	url := record.GetString("url")
+	actualURL := record.GetString("url")
 	title := record.GetString("title")
+
+	// Generate token for the URL
+	token, err := s.redisClient.GenerateURLToken(actualURL)
+	if err != nil {
+		// If Redis fails, log but don't break the flow - return empty URL
+		token = ""
+	}
+	
+	// Return token instead of actual URL
+	url := token
 
 	// Get the quality value from the relation field
 	qualityValue := ""
@@ -255,11 +282,12 @@ func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStrea
 	
 	var filter string
 	
-	// If category is "All" or "all", just get working channels
+	// If category is "All" or "all", just get all channels
 	if strings.ToLower(categoryName) == "all" || categoryName == "" {
-		filter = "is_working = true"
 		if len(excludeFilters) > 0 {
-			filter = fmt.Sprintf("%s && (%s)", filter, strings.Join(excludeFilters, " && "))
+			filter = strings.Join(excludeFilters, " && ")
+		} else {
+			filter = "" // No filter needed
 		}
 	} else {
 		// Get category ID by name
@@ -270,8 +298,8 @@ func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStrea
 		
 		categoryID := categoryRecord.Id
 		
-		// Build the filter - only working channels
-		filter = fmt.Sprintf("category = '%s' && is_working = true", categoryID)
+		// Build the filter
+		filter = fmt.Sprintf("category = '%s'", categoryID)
 		if len(excludeFilters) > 0 {
 			filter = fmt.Sprintf("%s && (%s)", filter, strings.Join(excludeFilters, " && "))
 		}
@@ -325,7 +353,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 	
 	// Strategy 1: Same language + same category
 	if languageID != "" && categoryID != "" {
-		filter := fmt.Sprintf("channel != '%s' && language = '%s' && category = '%s' && is_working = true", req.Channel, languageID, categoryID)
+		filter := fmt.Sprintf("channel != '%s' && language = '%s' && category = '%s'", req.Channel, languageID, categoryID)
 		records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", 4, 0, nil)
 		if err == nil {
 			for _, record := range records {
@@ -341,7 +369,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 	
 	// Strategy 2: Same language (any category) - if we need more channels
 	if languageID != "" && len(allResponses) < 4 {
-		filter := fmt.Sprintf("channel != '%s' && language = '%s' && is_working = true", req.Channel, languageID)
+		filter := fmt.Sprintf("channel != '%s' && language = '%s'", req.Channel, languageID)
 		needed := 4 - len(allResponses)
 		records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", needed+10, 0, nil)
 		if err == nil {
@@ -363,7 +391,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 	
 	// If we still need more, Strategy 3: Same category (any language)
 	if categoryID != "" && len(allResponses) < 4 {
-		filter := fmt.Sprintf("channel != '%s' && category = '%s' && is_working = true", req.Channel, categoryID)
+		filter := fmt.Sprintf("channel != '%s' && category = '%s'", req.Channel, categoryID)
 		needed := 4 - len(allResponses)
 		records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", needed+10, 0, nil)
 		if err == nil {
@@ -385,7 +413,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 	
 	// If we still don't have enough, get any high-quality channels
 	if len(allResponses) < 4 {
-		filter := fmt.Sprintf("channel != '%s' && is_working = true", req.Channel)
+		filter := fmt.Sprintf("channel != '%s'", req.Channel)
 		needed := 4 - len(allResponses)
 		records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", needed+10, 0, nil)
 		if err == nil {
@@ -413,9 +441,6 @@ func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsR
 	const perPage = 24
 	
 	var filters []string
-	
-	// Always filter by working channels
-	filters = append(filters, "is_working = true")
 	
 	// Filter by category if not "all"
 	if req.Category != "" && strings.ToLower(req.Category) != "all" {
@@ -565,7 +590,7 @@ func (s *Stream) SearchStreams(req *model.SearchStreamRequest) (*model.SearchStr
 	// Search by title field with case-insensitive partial matching
 	// Using ?~ for case-insensitive regex matching in PocketBase
 	escapedQuery := strings.ReplaceAll(req.Query, "'", "\\'")
-	filter := fmt.Sprintf("(title ?~ '%s' || id ?~ '%s') && is_working = true", 
+	filter := fmt.Sprintf("(title ?~ '%s' || id ?~ '%s')", 
 		escapedQuery, 
 		escapedQuery)
 	
@@ -633,5 +658,22 @@ func (s *Stream) SearchStreams(req *model.SearchStreamRequest) (*model.SearchStr
 	return &model.SearchStreamResponse{
 		Channels: channels,
 		Total:    len(channels),
+	}, nil
+}
+
+// PlayStream resolves a token to the actual stream URL
+func (s *Stream) PlayStream(req *model.PlayStreamRequest) (*model.PlayStreamResponse, error) {
+	if req.Token == "" {
+		return nil, fmt.Errorf("token is required")
+	}
+
+	// Get the actual URL from Redis using the token
+	actualURL, err := s.redisClient.GetURLByToken(req.Token)
+	if err != nil {
+		return nil, fmt.Errorf("invalid or expired token")
+	}
+
+	return &model.PlayStreamResponse{
+		URL: actualURL,
 	}, nil
 }

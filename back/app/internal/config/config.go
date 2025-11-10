@@ -11,6 +11,10 @@ import (
 
 type Config struct {
 	FeaturedChannels string `env:"FEATURED_CHANNES"`
+	RedisHost        string `env:"REDIS_HOST" env-default:"localhost"`
+	RedisPort        string `env:"REDIS_PORT" env-default:"6379"`
+	RedisPassword    string `env:"REDIS_PASSWORD" env-default:""`
+	RedisDB          int    `env:"REDIS_DB" env-default:"0"`
 }
 
 var (

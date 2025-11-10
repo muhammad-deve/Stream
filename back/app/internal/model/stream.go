@@ -70,3 +70,11 @@ type SearchStreamResponse struct {
 	Channels []*WatchStreamResponse `json:"channels"`
 	Total    int                    `json:"total"`
 }
+
+type PlayStreamRequest struct {
+	Token string `json:"token"`
+}
+
+type PlayStreamResponse struct {
+	URL string `json:"url"`
+}

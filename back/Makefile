@@ -33,5 +33,8 @@ scrape:
 filter:
 	cd ${APP_DIR} && go run cmd/main.go filter --dir=${PB_DATA_DIR}
 
+delete:
+	cd ${APP_DIR} && go run cmd/main.go delete --dir=${PB_DATA_DIR}
+
 run-app-watch:
 	cd $(APP_DIR) && nodemon --watch './**/*.go' --ignore 'app/artifacts/migrations/**' --signal SIGTERM --exec go run cmd/main.go serve --dir=${PB_DATA_DIR}
