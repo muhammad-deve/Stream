@@ -25,31 +25,48 @@ const ChannelPage = () => {
       if (!id) return;
       setLoading(true);
       
-      // Get channel data from navigation state
+      // Get channel data from navigation state (has the token)
       let channelData = location.state?.channelData as Channel | undefined;
       
-      // If no state, fetch from API
+      // If no state, we need to fetch from API
+      // BUT: This will generate a NEW token, so only do this if absolutely necessary
       if (!channelData) {
-        const apiChannel = await fetchChannelByName(decodeURIComponent(id));
-        if (!apiChannel) {
-          // Channel not found, redirect to home
-          navigate('/');
-          return;
+        // Try to get from sessionStorage first (preserves token during page refresh)
+        const cached = sessionStorage.getItem(`channel_${id}`);
+        if (cached) {
+          try {
+            channelData = JSON.parse(cached);
+          } catch (e) {
+            console.log("Failed to parse cached channel");
+          }
         }
         
-        // Convert API channel to Channel format
-        channelData = {
-          id: apiChannel.channel,
-          name: apiChannel.title,
-          description: apiChannel.title,
-          category: apiChannel.category?.name_1 || 'General',
-          country: apiChannel.country?.name || 'Unknown',
-          language: apiChannel.language?.name || 'Unknown',
-          logo: apiChannel.logo?.url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=200&h=200&fit=crop',
-          streamUrl: apiChannel.url,
-          featured: false
-        };
+        // If still no data, fetch from API (generates new token)
+        if (!channelData) {
+          const apiChannel = await fetchChannelByName(decodeURIComponent(id));
+          if (!apiChannel) {
+            // Channel not found, redirect to home
+            navigate('/');
+            return;
+          }
+          
+          // Convert API channel to Channel format
+          channelData = {
+            id: apiChannel.channel,
+            name: apiChannel.title,
+            description: apiChannel.title,
+            category: apiChannel.category?.name_1 || 'General',
+            country: apiChannel.country?.name || 'Unknown',
+            language: apiChannel.language?.name || 'Unknown',
+            logo: apiChannel.logo?.url || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=200&h=200&fit=crop',
+            streamUrl: apiChannel.url,
+            featured: false
+          };
+        }
       }
+      
+      // Cache the channel data with token in sessionStorage
+      sessionStorage.setItem(`channel_${id}`, JSON.stringify(channelData));
       
       setChannel(channelData);
       setLoading(false);
@@ -64,7 +81,7 @@ const ChannelPage = () => {
       setRecommendedChannels(recommended);
     };
     loadChannel();
-  }, [id, location.state]);
+  }, [id, location.state, navigate]);
 
   // Setup HLS player
   useEffect(() => {
