@@ -28,7 +28,7 @@ func GetConfig() *Config {
 
 		instance = &Config{}
 
-		// Since main.go is inside app/cmd, .env is in app/
+		// Try to read from .env file (for local development)
 		envFilePath := filepath.Join("..", ".env")
 		absPath, err := filepath.Abs(envFilePath)
 		if err != nil {
@@ -36,19 +36,39 @@ func GetConfig() *Config {
 		}
 		fmt.Printf("Looking for .env file at: %s\n", absPath)
 
+		// Try to read from file, but don't fail if it doesn't exist
 		if err := cleanenv.ReadConfig(envFilePath, instance); err != nil {
-			fmt.Printf("❌ Failed to read config from %s: %v\n", envFilePath, err)
-			helpText := "Saidoff - Reading project!"
-			help, _ := cleanenv.GetDescription(instance, &helpText)
-			log.Print(help)
-			fmt.Println("⚠️ Application is starting with default config")
+			fmt.Printf("⚠️  .env file not found, reading from environment variables\n")
 		} else {
 			fmt.Printf("✅ Successfully loaded config from %s\n", envFilePath)
 		}
 
+		// Always read from environment variables (overrides file values)
+		if err := cleanenv.ReadEnv(instance); err != nil {
+			fmt.Printf("❌ Failed to read environment variables: %v\n", err)
+		} else {
+			fmt.Println("✅ Environment variables loaded")
+		}
+
+		// Display loaded configuration
+		fmt.Printf("Configuration:\n")
+		fmt.Printf("  REDIS_HOST: %s\n", instance.RedisHost)
+		fmt.Printf("  REDIS_PORT: %s\n", instance.RedisPort)
+		fmt.Printf("  REDIS_DB: %d\n", instance.RedisDB)
+		fmt.Printf("  REDIS_PASSWORD: %s\n", maskPassword(instance.RedisPassword))
 		if instance.FeaturedChannels != "" {
-			fmt.Println("Loaded FeaturedChannels: ✓")
+			fmt.Println("  FEATURED_CHANNES: ✓")
 		}
 	})
 	return instance
+}
+
+func maskPassword(password string) string {
+	if password == "" {
+		return "(empty)"
+	}
+	if len(password) <= 4 {
+		return "****"
+	}
+	return password[:2] + "****" + password[len(password)-2:]
 }
