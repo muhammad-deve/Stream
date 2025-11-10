@@ -60,7 +60,7 @@ else
     docker run -d \
         --name stream-redis \
         --restart unless-stopped \
-        -p 127.0.0.1:6379:6379 \
+        -p 127.0.0.1:6380:6379 \
         redis:7-alpine \
         redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
     REDIS_CONTAINER="stream-redis"
