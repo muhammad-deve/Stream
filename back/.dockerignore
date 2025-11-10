@@ -1,3 +1,14 @@
 app/artifacts/pb_data/*
 .idea
 .vscode
+.git
+.gitignore
+*.md
+LICENSE
+Makefile
+docker-compose*.yml
+nginx/
+certbot/
+.gitlab-ci.yml
+.env
+app/.env
