@@ -1,3 +1,6 @@
+// API Base URL - uses environment variable or defaults to localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8090/api';
+
 export interface Channel {
   id: string;
   name: string;
@@ -45,7 +48,7 @@ export interface ApiFeaturedChannel {
 // Fetch categories from backend API
 export const fetchCategories = async (): Promise<string[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/categories');
+    const response = await fetch(`${API_BASE_URL}/v1/stream/categories`);
     if (!response.ok) throw new Error('Failed to fetch categories');
     const data = await response.json();
     return ['All', ...data.categories];
@@ -58,7 +61,7 @@ export const fetchCategories = async (): Promise<string[]> => {
 // Fetch countries from backend API
 export const fetchCountries = async (): Promise<string[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/countries');
+    const response = await fetch(`${API_BASE_URL}/v1/stream/countries`);
     if (!response.ok) throw new Error('Failed to fetch countries');
     const data = await response.json();
     return ['All', ...data.countries];
@@ -71,7 +74,7 @@ export const fetchCountries = async (): Promise<string[]> => {
 // Fetch languages from backend API
 export const fetchLanguages = async (): Promise<string[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/languages');
+    const response = await fetch(`${API_BASE_URL}/v1/stream/languages`);
     if (!response.ok) throw new Error('Failed to fetch languages');
     const data = await response.json();
     return ['All', ...data.languages];
@@ -243,7 +246,7 @@ export const fetchFeaturedChannels = async (): Promise<Channel[]> => {
 // Fetch single channel data from API by channel name
 export const fetchChannelByName = async (channelName: string): Promise<ApiFeaturedChannel | null> => {
   try {
-    const response = await fetch(`http://127.0.0.1:8090/api/v1/stream/channel/${encodeURIComponent(channelName)}`);
+    const response = await fetch(`${API_BASE_URL}/v1/stream/channel/${encodeURIComponent(channelName)}`);
     if (!response.ok) {
       if (response.status === 404) {
         return null;
@@ -261,7 +264,7 @@ export const fetchChannelByName = async (channelName: string): Promise<ApiFeatur
 // Fetch channels by category
 export const fetchChannelsByCategory = async (categoryName: string): Promise<Channel[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/category', {
+    const response = await fetch(`${API_BASE_URL}/v1/stream/category`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -300,7 +303,7 @@ export const fetchRecommendedChannels = async (
   languageName: string
 ): Promise<Channel[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/recommend', {
+    const response = await fetch(`${API_BASE_URL}/v1/stream/recommend`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -359,7 +362,7 @@ export const fetchAllStreams = async (
   page: number = 1
 ): Promise<AllStreamsResponse> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/all', {
+    const response = await fetch(`${API_BASE_URL}/v1/stream/all`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -417,7 +420,7 @@ export const searchChannels = async (query: string): Promise<SearchResponse> => 
       return { channels: [], total: 0 };
     }
 
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/search', {
+    const response = await fetch(`${API_BASE_URL}/v1/stream/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -460,7 +463,7 @@ export const searchChannels = async (query: string): Promise<SearchResponse> => 
 // Resolve token to actual stream URL
 export const playStream = async (token: string): Promise<string | null> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/play', {
+    const response = await fetch(`${API_BASE_URL}/v1/stream/play`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
