@@ -60,7 +60,7 @@ func (s *Stream) WatchStream(req *model.WatchStreamRequest) (*model.WatchStreamR
 	}
 
 	channel := record.GetString("channel")
-	
+
 	// Get the quality value from the relation field
 	qualityValue := ""
 	qualityID := record.GetString("quality")
@@ -147,7 +147,7 @@ func (s *Stream) buildChannelResponse(record *core.Record) *model.WatchStreamRes
 		// If Redis fails, log but don't break the flow - return empty URL
 		token = ""
 	}
-	
+
 	// Return token instead of actual URL
 	url := token
 
@@ -225,29 +225,36 @@ func (s *Stream) buildChannelResponse(record *core.Record) *model.WatchStreamRes
 	}
 }
 
-// GetFeaturedChannels retrieves featured channels from the database based on IDs from config
+// GetFeaturedChannels retrieves featured channels from the database
 func (s *Stream) GetFeaturedChannels() ([]*model.WatchStreamResponse, error) {
-	cfg := config.GetConfig()
-	if cfg.FeaturedChannels == "" {
-		return []*model.WatchStreamResponse{}, nil
+	// Query the featured table to get all featured records
+	featuredRecords, err := s.app.FindRecordsByFilter(
+		"featured",
+		"",         // empty filter to get all records
+		"-created", // sort by created date, newest first
+		0,          // limit (0 = no limit)
+		0,          // offset
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	// Parse the featured channel IDs from config
-	channelIDs := strings.Split(cfg.FeaturedChannels, ",")
 	var responses []*model.WatchStreamResponse
 
-	for _, id := range channelIDs {
-		id = strings.TrimSpace(id)
-		if id == "" {
+	for _, featuredRecord := range featuredRecords {
+		// Get the channel ID from the relation field
+		channelID := featuredRecord.GetString("channel")
+		if channelID == "" {
 			continue
 		}
 
-		record, err := s.app.FindRecordById("channels", id)
-		if err != nil || record == nil {
+		// Fetch the actual channel record
+		channelRecord, err := s.app.FindRecordById("channels", channelID)
+		if err != nil || channelRecord == nil {
 			continue
 		}
 
-		response := s.buildChannelResponse(record)
+		response := s.buildChannelResponse(channelRecord)
 		responses = append(responses, response)
 	}
 
@@ -270,7 +277,7 @@ func (s *Stream) GetChannelByName(channelName string) (*model.WatchStreamRespons
 func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStreamResponse, error) {
 	cfg := config.GetConfig()
 	featuredIDs := strings.Split(cfg.FeaturedChannels, ",")
-	
+
 	// Build filter to exclude featured channels
 	var excludeFilters []string
 	for _, id := range featuredIDs {
@@ -279,9 +286,9 @@ func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStrea
 			excludeFilters = append(excludeFilters, fmt.Sprintf("id != '%s'", id))
 		}
 	}
-	
+
 	var filter string
-	
+
 	// If category is "All" or "all", just get all channels
 	if strings.ToLower(categoryName) == "all" || categoryName == "" {
 		if len(excludeFilters) > 0 {
@@ -295,16 +302,16 @@ func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStrea
 		if err != nil || categoryRecord == nil {
 			return []*model.WatchStreamResponse{}, nil
 		}
-		
+
 		categoryID := categoryRecord.Id
-		
+
 		// Build the filter
 		filter = fmt.Sprintf("category = '%s'", categoryID)
 		if len(excludeFilters) > 0 {
 			filter = fmt.Sprintf("%s && (%s)", filter, strings.Join(excludeFilters, " && "))
 		}
 	}
-	
+
 	// Get channels with good quality (prioritize higher quality)
 	records, err := s.app.FindRecordsByFilter(
 		"channels",
@@ -314,17 +321,17 @@ func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStrea
 		0,
 		nil,
 	)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to find channels by category: %w", err)
 	}
-	
+
 	var responses []*model.WatchStreamResponse
 	for _, record := range records {
 		response := s.buildChannelResponse(record)
 		responses = append(responses, response)
 	}
-	
+
 	return responses, nil
 }
 
@@ -333,24 +340,24 @@ func (s *Stream) GetChannelsByCategory(categoryName string) ([]*model.WatchStrea
 // Always prioritizes best quality and excludes the watching channel itself.
 func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*model.WatchStreamResponse, error) {
 	var allResponses []*model.WatchStreamResponse
-	
+
 	// Get language and category IDs
 	var languageID, categoryID string
-	
+
 	if req.LanguageName != "" {
 		languageRecord, err := s.app.FindFirstRecordByFilter("languages", fmt.Sprintf("name = '%s'", req.LanguageName))
 		if err == nil && languageRecord != nil {
 			languageID = languageRecord.Id
 		}
 	}
-	
+
 	if req.CategoryName != "" {
 		categoryRecord, err := s.app.FindFirstRecordByFilter("categories", fmt.Sprintf("name_1 = '%s'", req.CategoryName))
 		if err == nil && categoryRecord != nil {
 			categoryID = categoryRecord.Id
 		}
 	}
-	
+
 	// Strategy 1: Same language + same category
 	if languageID != "" && categoryID != "" {
 		filter := fmt.Sprintf("channel != '%s' && language = '%s' && category = '%s'", req.Channel, languageID, categoryID)
@@ -361,12 +368,12 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 			}
 		}
 	}
-	
+
 	// If we have 4 channels, return them
 	if len(allResponses) >= 4 {
 		return allResponses[:4], nil
 	}
-	
+
 	// Strategy 2: Same language (any category) - if we need more channels
 	if languageID != "" && len(allResponses) < 4 {
 		filter := fmt.Sprintf("channel != '%s' && language = '%s'", req.Channel, languageID)
@@ -378,7 +385,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 			for _, resp := range allResponses {
 				existingChannels[resp.Channel] = true
 			}
-			
+
 			for _, record := range records {
 				channelName := record.GetString("channel")
 				if !existingChannels[channelName] && len(allResponses) < 4 {
@@ -388,7 +395,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 			}
 		}
 	}
-	
+
 	// If we still need more, Strategy 3: Same category (any language)
 	if categoryID != "" && len(allResponses) < 4 {
 		filter := fmt.Sprintf("channel != '%s' && category = '%s'", req.Channel, categoryID)
@@ -400,7 +407,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 			for _, resp := range allResponses {
 				existingChannels[resp.Channel] = true
 			}
-			
+
 			for _, record := range records {
 				channelName := record.GetString("channel")
 				if !existingChannels[channelName] && len(allResponses) < 4 {
@@ -410,7 +417,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 			}
 		}
 	}
-	
+
 	// If we still don't have enough, get any high-quality channels
 	if len(allResponses) < 4 {
 		filter := fmt.Sprintf("channel != '%s'", req.Channel)
@@ -421,7 +428,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 			for _, resp := range allResponses {
 				existingChannels[resp.Channel] = true
 			}
-			
+
 			for _, record := range records {
 				channelName := record.GetString("channel")
 				if !existingChannels[channelName] && len(allResponses) < 4 {
@@ -431,7 +438,7 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 			}
 		}
 	}
-	
+
 	return allResponses, nil
 }
 
@@ -439,9 +446,9 @@ func (s *Stream) GetRecommendedChannels(req *model.RecommendStreamRequest) ([]*m
 // Returns paginated results (24 per page) sorted by quality
 func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsResponse, error) {
 	const perPage = 24
-	
+
 	var filters []string
-	
+
 	// Filter by category if not "all"
 	if req.Category != "" && strings.ToLower(req.Category) != "all" {
 		categoryRecord, err := s.app.FindFirstRecordByFilter("categories", fmt.Sprintf("name_1 = '%s'", strings.ToLower(req.Category)))
@@ -449,7 +456,7 @@ func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsR
 			filters = append(filters, fmt.Sprintf("category = '%s'", categoryRecord.Id))
 		}
 	}
-	
+
 	// Filter by country if not "all"
 	if req.Country != "" && strings.ToLower(req.Country) != "all" {
 		countryRecord, err := s.app.FindFirstRecordByFilter("countries", fmt.Sprintf("name = '%s'", req.Country))
@@ -457,7 +464,7 @@ func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsR
 			filters = append(filters, fmt.Sprintf("country = '%s'", countryRecord.Id))
 		}
 	}
-	
+
 	// Filter by language if not "all"
 	if req.Language != "" && strings.ToLower(req.Language) != "all" {
 		languageRecord, err := s.app.FindFirstRecordByFilter("languages", fmt.Sprintf("name = '%s'", req.Language))
@@ -465,24 +472,24 @@ func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsR
 			filters = append(filters, fmt.Sprintf("language = '%s'", languageRecord.Id))
 		}
 	}
-	
+
 	// Build the filter
 	filter := strings.Join(filters, " && ")
-	
+
 	// First, get total count
 	totalRecords, err := s.app.FindRecordsByFilter("channels", filter, "", 0, 0, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count channels: %w", err)
 	}
 	total := len(totalRecords)
-	
+
 	// Calculate pagination
 	totalPages := (total + perPage - 1) / perPage
 	if req.Page > totalPages && totalPages > 0 {
 		req.Page = totalPages
 	}
 	offset := (req.Page - 1) * perPage
-	
+
 	// Get paginated channels sorted by quality (highest to lowest)
 	records, err := s.app.FindRecordsByFilter(
 		"channels",
@@ -492,17 +499,17 @@ func (s *Stream) GetAllStreams(req *model.AllStreamsRequest) (*model.AllStreamsR
 		offset,
 		nil,
 	)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to find channels: %w", err)
 	}
-	
+
 	var channels []*model.WatchStreamResponse
 	for _, record := range records {
 		response := s.buildChannelResponse(record)
 		channels = append(channels, response)
 	}
-	
+
 	return &model.AllStreamsResponse{
 		Channels:   channels,
 		Total:      total,
@@ -518,11 +525,11 @@ func (s *Stream) GetCategories() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch categories: %w", err)
 	}
-	
+
 	// Use map to track unique categories
 	uniqueMap := make(map[string]bool)
 	var categories []string
-	
+
 	for _, record := range records {
 		name := record.GetString("name_1")
 		if name != "" && !uniqueMap[name] {
@@ -530,7 +537,7 @@ func (s *Stream) GetCategories() ([]string, error) {
 			categories = append(categories, name)
 		}
 	}
-	
+
 	return categories, nil
 }
 
@@ -540,11 +547,11 @@ func (s *Stream) GetCountries() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch countries: %w", err)
 	}
-	
+
 	// Use map to track unique countries
 	uniqueMap := make(map[string]bool)
 	var countries []string
-	
+
 	for _, record := range records {
 		name := record.GetString("name")
 		if name != "" && !uniqueMap[name] {
@@ -552,7 +559,7 @@ func (s *Stream) GetCountries() ([]string, error) {
 			countries = append(countries, name)
 		}
 	}
-	
+
 	return countries, nil
 }
 
@@ -562,11 +569,11 @@ func (s *Stream) GetLanguages() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch languages: %w", err)
 	}
-	
+
 	// Use map to track unique languages
 	uniqueMap := make(map[string]bool)
 	var languages []string
-	
+
 	for _, record := range records {
 		name := record.GetString("name")
 		if name != "" && !uniqueMap[name] {
@@ -574,7 +581,7 @@ func (s *Stream) GetLanguages() ([]string, error) {
 			languages = append(languages, name)
 		}
 	}
-	
+
 	return languages, nil
 }
 
@@ -590,10 +597,10 @@ func (s *Stream) SearchStreams(req *model.SearchStreamRequest) (*model.SearchStr
 	// Search by title field with case-insensitive partial matching
 	// Using ?~ for case-insensitive regex matching in PocketBase
 	escapedQuery := strings.ReplaceAll(req.Query, "'", "\\'")
-	filter := fmt.Sprintf("(title ?~ '%s' || id ?~ '%s')", 
-		escapedQuery, 
+	filter := fmt.Sprintf("(title ?~ '%s' || id ?~ '%s')",
+		escapedQuery,
 		escapedQuery)
-	
+
 	// Parameters: collection, filter, sort, limit, offset, params
 	records, err := s.app.FindRecordsByFilter("channels", filter, "-quality", 20, 0, nil)
 	if err != nil {
