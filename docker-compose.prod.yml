@@ -55,6 +55,8 @@ services:
       - "3000"
     depends_on:
       - back-app
+    volumes:
+      - frontend-dist:/app/dist
 
   # Nginx Reverse Proxy & SSL
   nginx:
@@ -68,6 +70,7 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt:ro
+      - frontend-dist:/usr/share/nginx/html:ro
     depends_on:
       - front-app
       - back-app
@@ -93,3 +96,4 @@ networks:
 
 volumes:
   redis-data:
+  frontend-dist:

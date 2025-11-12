@@ -13,7 +13,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_DB=${REDIS_DB:-0}
-      - FEATURED_CHANNEL=${FEATURED_CHANNELS}
+      - FEATURED_CHANNELS=${FEATURED_CHANNELS}
     depends_on:
       redis:
         condition: service_healthy
@@ -54,6 +54,7 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+      - stream-network
 
   certbot:
     image: certbot/certbot
@@ -67,6 +68,8 @@ services:
 networks:
   app-network:
     driver: bridge
+  stream-network:
+    external: true
 
 volumes:
   redis-data:
