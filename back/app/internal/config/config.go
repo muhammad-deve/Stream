@@ -57,7 +57,7 @@ func GetConfig() *Config {
 		fmt.Printf("  REDIS_DB: %d\n", instance.RedisDB)
 		fmt.Printf("  REDIS_PASSWORD: %s\n", maskPassword(instance.RedisPassword))
 		if instance.FeaturedChannels != "" {
-			fmt.Println("  FEATURED_CHANNES: ✓")
+			fmt.Println("  FEATURED_CHANNES: ✓ =======================================================>", instance.FeaturedChannels)
 		}
 	})
 	return instance
