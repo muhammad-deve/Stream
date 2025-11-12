@@ -218,7 +218,7 @@ export const filterChannels = (category: string, country: string, language: stri
 // Fetch featured channels from API
 export const fetchFeaturedChannels = async (): Promise<Channel[]> => {
   try {
-    const response = await fetch('http://127.0.0.1:8090/api/v1/stream/featured');
+    const response = await fetch('https://freetvchannels.online/api/v1/stream/featured');
     if (!response.ok) {
       throw new Error('Failed to fetch featured channels');
     }
