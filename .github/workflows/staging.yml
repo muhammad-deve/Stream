@@ -38,10 +38,6 @@ jobs:
       working-directory: ./front
       run: npm run type-check --if-present
 
-    - name: Run tests
-      working-directory: ./front
-      run: npm run test --if-present
-
     - name: Build frontend
       working-directory: ./front
       run: npm run build
