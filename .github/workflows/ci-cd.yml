@@ -1,0 +1,215 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Frontend Build and Test
+  frontend-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: front/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./front
+      run: npm ci
+
+    - name: Run linting
+      working-directory: ./front
+      run: npm run lint --if-present
+
+    - name: Run type checking
+      working-directory: ./front
+      run: npm run type-check --if-present
+
+    - name: Run tests
+      working-directory: ./front
+      run: npm run test --if-present
+
+    - name: Build frontend
+      working-directory: ./front
+      run: npm run build
+
+  # Backend Build and Test
+  backend-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      working-directory: ./back/app
+      run: go mod download
+
+    - name: Run tests
+      working-directory: ./back/app
+      run: go test -v ./...
+
+    - name: Build backend
+      working-directory: ./back/app
+      run: go build -o main ./cmd/main.go
+
+  # Docker Build and Push
+  build-and-push:
+    needs: [frontend-test, backend-test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (frontend)
+      id: meta-frontend
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+
+    - name: Extract metadata (backend)
+      id: meta-backend
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./front
+        push: true
+        tags: ${{ steps.meta-frontend.outputs.tags }}
+        labels: ${{ steps.meta-frontend.outputs.labels }}
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./back
+        push: true
+        tags: ${{ steps.meta-backend.outputs.tags }}
+        labels: ${{ steps.meta-backend.outputs.labels }}
+
+  # Deploy to Production
+  deploy-production:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        # These secrets must be configured in GitHub repository settings
+        host: ${{ secrets.PROD_HOST }} # Server IP/hostname
+        username: ${{ secrets.PROD_USER }} # SSH username
+        key: ${{ secrets.PROD_SSH_KEY }} # SSH private key
+        script: |
+          cd /opt/stream
+          
+          # Pull latest changes
+          git pull origin main
+          
+          # Set environment variables
+          export REGISTRY="${{ env.REGISTRY }}"
+          export IMAGE_NAME="${{ env.IMAGE_NAME }}"
+          export REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" # Must be set in secrets
+          export FEATURED_CHANNES="${{ secrets.FEATURED_CHANNES }}" # Must be set in secrets
+          export DOMAIN="${{ secrets.DOMAIN }}" # Must be set in secrets
+          export SSL_EMAIL="${{ secrets.SSL_EMAIL }}" # Must be set in secrets
+          
+          # Login to container registry
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          
+          # Pull latest images
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:main
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:main
+          
+          # Restart services with zero downtime using CI compose file
+          docker-compose -f docker-compose.ci.yml down
+          docker-compose -f docker-compose.ci.yml up -d
+          
+          # Clean up old images
+          docker image prune -f
+
+  # Health Check
+  health-check:
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Wait for deployment
+      run: sleep 30
+
+    - name: Check frontend health
+      run: |
+        # DOMAIN secret must be configured in GitHub repository settings
+        curl -f https://${{ secrets.DOMAIN }}/ || exit 1
+
+    - name: Check backend health
+      run: |
+        # DOMAIN secret must be configured in GitHub repository settings
+        curl -f https://${{ secrets.DOMAIN }}/api/health || exit 1
+
+    - name: Notify on success
+      if: success()
+      run: |
+        echo "✅ Deployment to production successful!"
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Deployment to production failed!"

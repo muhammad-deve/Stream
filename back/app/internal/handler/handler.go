@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"encoding/json"
 	"log/slog"
+	"time"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
@@ -16,6 +18,9 @@ type Handler struct {
 }
 
 func (h *Handler) Register(router *router.Router[*core.RequestEvent]) {
+	// Health check endpoint
+	router.GET("/api/health", h.HealthCheckHandler)
+	
 	api := router.Group("/api/v1")
 	{
 		auth := api.Group("/auth")
@@ -46,4 +51,20 @@ func NewHandler(logger *slog.Logger, service service.I, cfg *config.Config) *Han
 		service: service,
 		cfg:     cfg,
 	}
+}
+
+func (h *Handler) HealthCheckHandler(e *core.RequestEvent) error {
+	health := map[string]interface{}{
+		"status":    "healthy",
+		"timestamp": time.Now().UTC(),
+		"service":   "stream-api",
+		"version":   "1.0.0",
+	}
+
+	data, err := json.Marshal(health)
+	if err != nil {
+		return e.String(500, "Internal server error")
+	}
+
+	return e.String(200, string(data))
 }
