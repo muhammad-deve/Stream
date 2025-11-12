@@ -1,19 +1,31 @@
-FROM golang:1.23-bullseye AS build
+FROM golang:1.23-alpine AS build
 
 WORKDIR /app
 
-COPY ./app/go.mod ./
+# Copy go mod files
+COPY app/go.mod app/go.sum ./
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go mod download
+# Download dependencies
+RUN go mod download
 
-COPY ./app .
+# Copy source code
+COPY app/ .
 
-RUN go build -ldflags="-linkmode external -extldflags -static" -tags netgo -o /app/main ./cmd/main.go
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
 
+# Final stage
 FROM alpine:3.19
 
-COPY --from=build /app/main /main
+RUN apk --no-cache add ca-certificates
 
-CMD ["/main", "serve", "--http=0.0.0.0:8090"]
+WORKDIR /root/
+
+# Copy the binary from build stage
+COPY --from=build /app/main .
+
+# Expose port
+EXPOSE 8090
+
+# Run the binary
+CMD ["./main", "serve", "--http=0.0.0.0:8090"]
