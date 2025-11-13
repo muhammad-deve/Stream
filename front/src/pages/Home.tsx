@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ChannelCard from "@/components/ChannelCard";
+import VerticalAd from "@/components/ads/VerticalAd";
+import HorizontalAd from "@/components/ads/HorizontalAd";
 import { fetchFeaturedChannels, fetchChannelsByCategory, fetchCategories, Channel } from "@/lib/channels";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
@@ -64,8 +66,20 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header onSearch={handleSearch} />
+    <div className="min-h-screen bg-background relative">
+      {/* Left Vertical Ad */}
+      <div className="fixed left-0 top-20 hidden xl:block z-10">
+        <VerticalAd />
+      </div>
+      
+      {/* Right Vertical Ad */}
+      <div className="fixed right-0 top-20 hidden xl:block z-10">
+        <VerticalAd />
+      </div>
+
+      {/* Main Content with side margins */}
+      <div className="xl:mx-[180px]">
+        <Header onSearch={handleSearch} />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 px-4">
@@ -212,6 +226,14 @@ const Home = () => {
           </div>
         </div>
       </footer>
+      </div>
+      
+      {/* Bottom Horizontal Ad */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-background border-t border-border">
+        <div className="xl:mx-[180px]">
+          <HorizontalAd />
+        </div>
+      </div>
     </div>
   );
 };

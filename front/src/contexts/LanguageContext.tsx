@@ -200,7 +200,7 @@ const translations: Record<Language, Record<string, string>> = {
     "channel.channels": "kanallar",
     // Donate
     "donate.title": "Streamly ni qo'llab-quvvatlang",
-    "donate.description": "Barcha uchun 3500+ kanallarni bepul saqlashga yordam bering. Sizning xayriyangiz to'g'ridan-to'g'ri infrastrukturamizni qo'llab-quvvatlaydi va butun dunyo bo'ylab millionlab foydalanuvchilarga xizmat ko'rsatishga imkon beradi.",
+    "donate.description": "Barcha uchun 3,500+ kanallarni bepul saqlashga yordam bering. Sizning xayriyangiz to'g'ridan-to'g'ri infrastrukturamizni qo'llab-quvvatlaydi va butun dunyo bo'ylab millionlab foydalanuvchilarga xizmat ko'rsatishga imkon beradi.",
     "donate.makeTitle": "Xayriya qilish",
     "donate.selectAmount": "Summani tanlang",
     "donate.customAmount": "Yoki o'z summangizni kiriting",

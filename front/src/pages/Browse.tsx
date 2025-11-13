@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import ChannelCard from "@/components/ChannelCard";
+import VerticalAd from "@/components/ads/VerticalAd";
 import { fetchCategories, fetchCountries, fetchLanguages, fetchAllStreams, Channel } from "@/lib/channels";
 import { Button } from "@/components/ui/button";
 import {
@@ -110,8 +111,20 @@ const Browse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header onSearch={handleSearch} />
+    <div className="min-h-screen bg-background relative">
+      {/* Left Vertical Ad */}
+      <div className="fixed left-0 top-20 hidden xl:block z-10">
+        <VerticalAd />
+      </div>
+      
+      {/* Right Vertical Ad */}
+      <div className="fixed right-0 top-20 hidden xl:block z-10">
+        <VerticalAd />
+      </div>
+
+      {/* Main Content with side margins */}
+      <div className="xl:mx-[180px]">
+        <Header onSearch={handleSearch} />
 
       <div className="container mx-auto py-8 px-4">
         {/* Header */}
@@ -224,6 +237,7 @@ const Browse = () => {
             <p className="text-xl text-muted-foreground">{t("browse.noChannels")}</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

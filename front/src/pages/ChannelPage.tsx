@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Globe, Languages } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ChannelCard from "@/components/ChannelCard";
+import VerticalAd from "@/components/ads/VerticalAd";
+import SidebarAd from "@/components/ads/SidebarAd";
 import Hls from "hls.js";
 
 const ChannelPage = () => {
@@ -166,10 +168,23 @@ const ChannelPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header onSearch={(q) => navigate(`/browse?search=${encodeURIComponent(q)}`)} />
-        <div className="container mx-auto py-16 px-4 text-center">
-          <p className="text-muted-foreground">Loading channel...</p>
+      <div className="min-h-screen bg-background relative">
+        {/* Left Vertical Ad */}
+        <div className="fixed left-0 top-20 hidden xl:block z-10">
+          <VerticalAd />
+        </div>
+        
+        {/* Right Vertical Ad */}
+        <div className="fixed right-0 top-20 hidden xl:block z-10">
+          <VerticalAd />
+        </div>
+
+        {/* Main Content with side margins */}
+        <div className="xl:mx-[180px]">
+          <Header onSearch={(q) => navigate(`/browse?search=${encodeURIComponent(q)}`)} />
+          <div className="container mx-auto py-16 px-4 text-center">
+            <p className="text-muted-foreground">Loading channel...</p>
+          </div>
         </div>
       </div>
     );
@@ -177,19 +192,44 @@ const ChannelPage = () => {
 
   if (!channel) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header onSearch={(q) => navigate(`/browse?search=${encodeURIComponent(q)}`)} />
-        <div className="container mx-auto py-16 px-4 text-center">
-          <h1 className="text-4xl font-bold mb-4 text-foreground">{t("channel.notFound")}</h1>
-          <Button onClick={() => navigate("/")}>{t("channel.goHome")}</Button>
+      <div className="min-h-screen bg-background relative">
+        {/* Left Vertical Ad */}
+        <div className="fixed left-0 top-20 hidden xl:block z-10">
+          <VerticalAd />
+        </div>
+        
+        {/* Right Vertical Ad */}
+        <div className="fixed right-0 top-20 hidden xl:block z-10">
+          <VerticalAd />
+        </div>
+
+        {/* Main Content with side margins */}
+        <div className="xl:mx-[180px]">
+          <Header onSearch={(q) => navigate(`/browse?search=${encodeURIComponent(q)}`)} />
+          <div className="container mx-auto py-16 px-4 text-center">
+            <h1 className="text-4xl font-bold mb-4 text-foreground">{t("channel.notFound")}</h1>
+            <Button onClick={() => navigate("/")}>{t("channel.goHome")}</Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header onSearch={(q) => navigate(`/browse?search=${encodeURIComponent(q)}`)} />
+    <div className="min-h-screen bg-background relative">
+      {/* Left Vertical Ad */}
+      <div className="fixed left-0 top-20 hidden xl:block z-10">
+        <VerticalAd />
+      </div>
+      
+      {/* Right Vertical Ad */}
+      <div className="fixed right-0 top-20 hidden xl:block z-10">
+        <VerticalAd />
+      </div>
+
+      {/* Main Content with side margins */}
+      <div className="xl:mx-[180px]">
+        <Header onSearch={(q) => navigate(`/browse?search=${encodeURIComponent(q)}`)} />
 
       <div className="container mx-auto max-w-7xl py-8 px-4">
         {/* Back Button */}
@@ -216,28 +256,37 @@ const ChannelPage = () => {
           </div>
         </Card>
 
-        {/* Channel Info */}
+        {/* Channel Info with Sidebar Ad */}
         <div className="mb-8">
-          <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex gap-6">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2 text-foreground">{channel.name}</h1>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-3">
-                <div className="flex items-center gap-1">
-                  <Globe className="h-4 w-4" />
-                  <span>{channel.country}</span>
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold mb-2 text-foreground">{channel.name}</h1>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-3">
+                    <div className="flex items-center gap-1">
+                      <Globe className="h-4 w-4" />
+                      <span>{channel.country}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Languages className="h-4 w-4" />
+                      <span>{channel.language}</span>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-primary/20 text-primary">
+                      {channel.category}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Languages className="h-4 w-4" />
-                  <span>{channel.language}</span>
-                </div>
-                <span className="px-3 py-1 rounded-full bg-primary/20 text-primary">
-                  {channel.category}
-                </span>
               </div>
+
+              <p className="text-muted-foreground leading-relaxed">{channel.description}</p>
+            </div>
+            
+            {/* Sidebar Ad */}
+            <div className="hidden lg:block">
+              <SidebarAd />
             </div>
           </div>
-
-          <p className="text-muted-foreground leading-relaxed">{channel.description}</p>
         </div>
 
         {/* Recommended Channels */}
@@ -253,6 +302,7 @@ const ChannelPage = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
