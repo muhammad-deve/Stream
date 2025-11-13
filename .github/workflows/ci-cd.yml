@@ -205,7 +205,7 @@ jobs:
     - name: Check backend health
       run: |
         # DOMAIN secret must be configured in GitHub repository settings
-        curl -f https://${{ secrets.DOMAIN }}/api/health || exit 1
+        curl -f https://${{ secrets.DOMAIN }}/api/ || exit 1
 
     - name: Notify on success
       if: success()
