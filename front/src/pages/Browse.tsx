@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import ChannelCard from "@/components/ChannelCard";
 import VerticalAd from "@/components/ads/VerticalAd";
-import { fetchCategories, fetchCountries, fetchLanguages, fetchAllStreams, Channel } from "@/lib/channels";
+import { fetchCategories, fetchCountries, fetchLanguages, fetchAllStreams, searchChannels, Channel } from "@/lib/channels";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -57,23 +57,27 @@ const Browse = () => {
 
   useEffect(() => {
     const loadChannels = async () => {
-      if (searchQuery) {
-        // Handle search functionality (keep existing or implement search API)
-        return;
-      }
-
       setLoading(true);
       try {
-        const result = await fetchAllStreams(
-          selectedCategory,
-          selectedCountry,
-          selectedLanguage,
-          currentPage
-        );
-        
-        setDisplayedChannels(result.channels);
-        setTotalChannels(result.total);
-        setTotalPages(result.total_pages);
+        if (searchQuery) {
+          // Handle search functionality
+          const searchResult = await searchChannels(searchQuery);
+          setDisplayedChannels(searchResult.channels);
+          setTotalChannels(searchResult.total);
+          setTotalPages(1); // Search results don't have pagination
+        } else {
+          // Load normal channels with filters
+          const result = await fetchAllStreams(
+            selectedCategory,
+            selectedCountry,
+            selectedLanguage,
+            currentPage
+          );
+          
+          setDisplayedChannels(result.channels);
+          setTotalChannels(result.total);
+          setTotalPages(result.total_pages);
+        }
       } catch (error) {
         console.error('Error loading channels:', error);
         setDisplayedChannels([]);

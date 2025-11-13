@@ -14,7 +14,7 @@ RUN npm ci
 COPY . .
 
 # Build the application with production environment
-RUN npm run build
+RUN npm run build:prod
 
 # Production stage
 FROM node:20-alpine
