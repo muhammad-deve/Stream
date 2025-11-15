@@ -13,7 +13,7 @@ sleep 5
 
 # Generate SSL certificate
 docker compose run --rm certbot certonly \
-    --webconf \
+    --webroot \
     --webroot-path /var/www/certbot \
     -d $DOMAIN \
     --email $EMAIL \
