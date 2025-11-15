@@ -1,0 +1,44 @@
+services:
+  back-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: back-app
+    ports:
+      - "8090:8090"
+    environment:
+      - REDIS_HOST=back-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB:-0}
+      - FEATURED_CHANNELS=${FEATURED_CHANNELS}
+    depends_on:
+      back-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - back-network
+
+  back-redis:
+    image: redis:7-alpine
+    container_name: back-redis
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD}"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - back-network
+
+networks:
+  back-network:
+    driver: bridge
+
+volumes:
+  redis-data:
