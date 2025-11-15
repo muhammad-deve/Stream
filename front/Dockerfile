@@ -13,8 +13,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application with production environment
-RUN npm run build:prod
+# Build the application - use standard build (Vite will optimize for production by default)
+RUN npm run build
 
 # Production stage
 FROM node:20-alpine
