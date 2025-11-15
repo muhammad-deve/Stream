@@ -1,5 +1,5 @@
-// API Base URL - uses environment variable or defaults to localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8090/api';
+// API Base URL - uses environment variable or defaults to production URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://freetvchannels.online/api';
 
 export interface Channel {
   id: string;
@@ -420,7 +420,8 @@ export const searchChannels = async (query: string): Promise<SearchResponse> => 
       return { channels: [], total: 0 };
     }
 
-    const response = await fetch(`${API_BASE_URL}/v1/stream/search`, {
+    // Try public search endpoint first (no auth required)
+    let response = await fetch(`${API_BASE_URL}/v1/public/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -428,8 +429,21 @@ export const searchChannels = async (query: string): Promise<SearchResponse> => 
       body: JSON.stringify({ query: query.trim() }),
     });
 
+    // If public endpoint doesn't exist, try the regular search endpoint
     if (!response.ok) {
-      throw new Error('Failed to search channels');
+      response = await fetch(`${API_BASE_URL}/v1/stream/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: query.trim() }),
+      });
+    }
+
+    if (!response.ok) {
+      // If search requires auth and fails, return empty results
+      console.warn('Search endpoint requires authentication or is unavailable');
+      return { channels: [], total: 0 };
     }
 
     const data = await response.json();

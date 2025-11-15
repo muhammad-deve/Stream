@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
 
+interface AdSenseObject {
+  [key: string]: unknown;
+}
+
 declare global {
   interface Window {
-    adsbygoogle: any[];
+    adsbygoogle: (AdSenseObject | undefined)[];
   }
 }
 
