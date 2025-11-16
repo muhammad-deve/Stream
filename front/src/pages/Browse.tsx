@@ -141,8 +141,8 @@ const Browse = () => {
           </p>
         </div>
 
-        {/* Filters - Sticky */}
-        <div className="sticky top-16 z-40 bg-background py-4 mb-8 flex flex-wrap gap-4 items-center border-b border-border">
+        {/* Filters */}
+        <div className="bg-background py-4 mb-8 flex flex-wrap gap-4 items-center border-b border-border">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">{t("browse.category")}:</span>
             <Select value={selectedCategory} onValueChange={handleCategoryChange} disabled={filtersLoading}>

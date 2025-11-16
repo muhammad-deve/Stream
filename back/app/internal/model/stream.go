@@ -72,7 +72,9 @@ type SearchStreamResponse struct {
 }
 
 type PlayStreamRequest struct {
-	Token string `json:"token"`
+	Token     string `json:"token,omitempty"`      // Optional: for backward compatibility
+	ChannelID string `json:"channel_id,omitempty"` // Channel ID to fetch stream URL
+	URL       string `json:"url,omitempty"`        // Direct stream URL
 }
 
 type PlayStreamResponse struct {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ChannelCard from "@/components/ChannelCard";
@@ -16,8 +16,25 @@ const Home = () => {
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [loading, setLoading] = useState(true);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const heroRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { t } = useLanguage();
+
+  // Track mouse movement for interactive effects
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        setMousePos({ x, y });
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // Fetch categories and featured channels from API on component mount
   useEffect(() => {
@@ -82,11 +99,44 @@ const Home = () => {
         <Header onSearch={handleSearch} />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-secondary to-background opacity-90"></div>
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+      <section ref={heroRef} className="relative overflow-hidden py-32 px-4 group">
+        {/* Background */}
+        <div className="absolute inset-0 bg-background"></div>
+        
+        {/* Streaming Device Icons - Left Side */}
+        <div className="absolute left-0 top-1/4 opacity-20 dark:opacity-30 group-hover:opacity-40 transition-all duration-500 pointer-events-none transform group-hover:scale-110 -translate-x-1/3 sm:-translate-x-1/4 md:translate-x-0">
+          <svg className="w-32 sm:w-48 md:w-64 h-32 sm:h-48 md:h-64 text-blue-500 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+            {/* TV Icon */}
+            <path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14l4 4V5c0-1.1-.9-2-2-2zm-2 16H4V5h14v14z"/>
+          </svg>
+        </div>
+        
+        {/* Play Button Icon - Right Side */}
+        <div className="absolute right-0 bottom-1/4 opacity-20 dark:opacity-30 group-hover:opacity-40 transition-all duration-500 pointer-events-none transform group-hover:scale-110 translate-x-1/3 sm:translate-x-1/4 md:translate-x-0">
+          <svg className="w-40 sm:w-56 md:w-80 h-40 sm:h-56 md:h-80 text-purple-500 dark:text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+            {/* Play Icon */}
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </div>
+        
+        {/* Streaming Waves - Center */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-20 group-hover:opacity-25 transition-all duration-500 pointer-events-none transform group-hover:scale-105">
+          <svg className="w-48 sm:w-64 md:w-96 h-48 sm:h-64 md:h-96 text-cyan-500 dark:text-cyan-400" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="50" cy="50" r="10"/>
+            <circle cx="50" cy="50" r="25" opacity="0.7"/>
+            <circle cx="50" cy="50" r="40" opacity="0.4"/>
+            <circle cx="50" cy="50" r="55" opacity="0.2"/>
+          </svg>
+        </div>
+        
+        {/* Interactive Hover Gradient Overlay */}
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-all duration-500 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at ${mousePos.x}px ${mousePos.y}px, rgba(59, 130, 246, 0.4) 0%, transparent 50%)`
+          }}
+        ></div>
+        
         <div className="container mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
             <Sparkles className="h-4 w-4 text-primary" />

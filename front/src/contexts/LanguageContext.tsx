@@ -16,10 +16,10 @@ const translations: Record<Language, Record<string, string>> = {
     "header.donate": "Donate",
     "header.search": "Search channels...",
     // Hero
-    "hero.badge": "100% Free • No Registration Required • Without Ads",
+    "hero.badge": "100% Free • No Registration Required",
     "hero.title": "Watch 3500+ TV Channels",
     "hero.titleHighlight": "Absolutely Free",
-    "hero.description": "Stream live TV from around the world. News, sports, movies, music, and more. No credit card. No signup. No ads.",
+    "hero.description": "Stream live TV from around the world. News, sports, movies, music, and more. No credit card. No signup.",
     "hero.browseButton": "Browse All Channels",
     "hero.supportButton": "Support Us",
     // Sections
@@ -28,7 +28,7 @@ const translations: Record<Language, Record<string, string>> = {
     "section.viewAll": "View All Channels",
     // Footer
     "footer.about": "About Streamly",
-    "footer.aboutText": "We provide free access to thousands of TV channels from around the world. No registration, no fees, no ads - just pure entertainment.",
+    "footer.aboutText": "We provide free access to thousands of TV channels from around the world. No registration, no fees - just pure entertainment.",
     "footer.quickLinks": "Quick Links",
     "footer.support": "Support Us",
     "footer.supportText": "If you enjoy our service, please consider supporting us to keep the platform running.",

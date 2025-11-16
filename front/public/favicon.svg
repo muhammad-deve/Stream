@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#grad1)"/>
+  
+  <!-- TV Screen -->
+  <rect x="40" y="50" width="176" height="140" rx="12" fill="white" opacity="0.95"/>
+  
+  <!-- Screen content - play symbol -->
+  <g transform="translate(128, 110)">
+    <!-- Play triangle -->
+    <polygon points="0,-35 40,20 -40,20" fill="#3b82f6" opacity="0.9"/>
+    
+    <!-- Glow effect -->
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.3"/>
+  </g>
+  
+  <!-- TV stand -->
+  <rect x="95" y="195" width="66" height="8" rx="2" fill="white" opacity="0.95"/>
+  <rect x="110" y="203" width="36" height="12" rx="2" fill="white" opacity="0.95"/>
+  
+  <!-- Accent lines for modern look -->
+  <line x1="50" y1="55" x2="206" y2="55" stroke="#3b82f6" stroke-width="2" opacity="0.3"/>
+  <line x1="50" y1="185" x2="206" y2="185" stroke="#3b82f6" stroke-width="2" opacity="0.3"/>
+</svg>

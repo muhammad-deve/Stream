@@ -144,8 +144,10 @@ func (s *Stream) buildChannelResponse(record *core.Record) *model.WatchStreamRes
 	// Generate token for the URL
 	token, err := s.redisClient.GenerateURLToken(actualURL)
 	if err != nil {
-		// If Redis fails, log but don't break the flow - return empty URL
-		token = ""
+		// If Redis fails, we need to handle this - don't return empty token
+		// Log the error and return the actual URL as fallback
+		// This ensures playback works even if Redis is temporarily unavailable
+		token = actualURL
 	}
 
 	// Return token instead of actual URL
@@ -668,19 +670,55 @@ func (s *Stream) SearchStreams(req *model.SearchStreamRequest) (*model.SearchStr
 	}, nil
 }
 
-// PlayStream resolves a token to the actual stream URL
+// PlayStream resolves a token to the actual stream URL, or fetches URL by channel_id, or returns direct URL
 func (s *Stream) PlayStream(req *model.PlayStreamRequest) (*model.PlayStreamResponse, error) {
-	if req.Token == "" {
-		return nil, fmt.Errorf("token is required")
+	// If URL is provided directly, return it
+	if req.URL != "" {
+		return &model.PlayStreamResponse{
+			URL: req.URL,
+		}, nil
 	}
 
-	// Get the actual URL from Redis using the token
-	actualURL, err := s.redisClient.GetURLByToken(req.Token)
-	if err != nil {
+	// If channel_id is provided, fetch the URL from database
+	if req.ChannelID != "" {
+		filter := fmt.Sprintf("id = '%s'", req.ChannelID)
+		record, err := s.app.FindFirstRecordByFilter("channels", filter)
+		if err != nil || record == nil {
+			return nil, fmt.Errorf("channel not found")
+		}
+
+		actualURL := record.GetString("url")
+		if actualURL == "" {
+			return nil, fmt.Errorf("channel url is empty")
+		}
+
+		return &model.PlayStreamResponse{
+			URL: actualURL,
+		}, nil
+	}
+
+	// If token is provided, try to resolve it from Redis
+	if req.Token != "" {
+		// First, try to get the actual URL from Redis using the token
+		actualURL, err := s.redisClient.GetURLByToken(req.Token)
+		if err == nil {
+			// Token found in Redis, return the URL
+			return &model.PlayStreamResponse{
+				URL: actualURL,
+			}, nil
+		}
+
+		// If token is not in Redis, check if it's a direct URL (fallback for Redis failures)
+		// Direct URLs typically start with http:// or https://
+		if strings.HasPrefix(req.Token, "http://") || strings.HasPrefix(req.Token, "https://") {
+			return &model.PlayStreamResponse{
+				URL: req.Token,
+			}, nil
+		}
+
+		// Token not found and not a direct URL
 		return nil, fmt.Errorf("invalid or expired token")
 	}
 
-	return &model.PlayStreamResponse{
-		URL: actualURL,
-	}, nil
+	return nil, fmt.Errorf("token, channel_id, or url is required")
 }

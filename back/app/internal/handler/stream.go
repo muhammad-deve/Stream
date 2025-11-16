@@ -213,17 +213,18 @@ func (h *Handler) PlayStreamHandler(e *core.RequestEvent) error {
 		})
 	}
 
-	if req.Token == "" {
+	// At least one of token, channel_id, or url must be provided
+	if req.Token == "" && req.ChannelID == "" && req.URL == "" {
 		return e.JSON(http.StatusBadRequest, map[string]string{
-			"error": "token is required",
+			"error": "token, channel_id, or url is required",
 		})
 	}
 
 	resp, err := h.service.Stream().PlayStream(&req)
 	if err != nil {
 		h.logger.Error("failed to play stream", "error", err)
-		return e.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "invalid or expired token",
+		return e.JSON(http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
 		})
 	}
 

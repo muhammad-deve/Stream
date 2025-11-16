@@ -1,180 +1,134 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Heart, DollarSign, ExternalLink } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Heart, Coffee, ExternalLink, Zap, Shield, Users } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import "./Donate.css";
 
 const Donate = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { t } = useLanguage();
-  const [amount, setAmount] = useState("");
-  const [customAmount, setCustomAmount] = useState("");
 
-  const presetAmounts = ["5", "10", "25", "50", "100"];
-
-  const handleDonate = (method: string) => {
-    const donationAmount = amount || customAmount;
-    if (!donationAmount || parseFloat(donationAmount) <= 0) {
-      toast({
-        title: t("donate.invalidAmount"),
-        description: t("donate.invalidAmountDesc"),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (method === "buymeacoffee") {
-      window.open("https://buymeacoffee.com/muhammad_deve", "_blank");
-    } else if (method === "tirikchilik") {
-      toast({
-        title: t("donate.thankYouTitle"),
-        description: "Tirikchilik.uz integration coming soon!",
-      });
-    }
+  const handleSupport = () => {
+    // Redirect to Buy Me a Coffee
+    window.open("https://buymeacoffee.com/muhammad_deve", "_blank");
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Header onSearch={(q) => navigate(`/browse?search=${encodeURIComponent(q)}`)} />
 
-      <div className="container mx-auto py-16 px-4">
+      <div className="container mx-auto py-20 px-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 mb-6">
               <Heart className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold mb-4 text-foreground">{t("donate.title")}</h1>
+            <h1 className="text-5xl font-bold mb-4 text-foreground">Support Streamly</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              {t("donate.description")}
+              Help us keep providing free access to thousands of TV channels worldwide
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Donation Form */}
-            <Card className="p-8 bg-card border-border">
-              <h2 className="text-2xl font-bold mb-6 text-foreground">{t("donate.makeTitle")}</h2>
-
-              {/* Preset Amounts */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-3 text-foreground">
-                  {t("donate.selectAmount")}
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {presetAmounts.map((preset) => (
-                    <Button
-                      key={preset}
-                      variant={amount === preset ? "default" : "outline"}
-                      onClick={() => {
-                        setAmount(preset);
-                        setCustomAmount("");
-                      }}
-                      className={amount === preset ? "bg-primary text-primary-foreground" : ""}
-                    >
-                      ${preset}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Amount */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-3 text-foreground">
-                  {t("donate.customAmount")}
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    placeholder={t("donate.enterAmount")}
-                    value={customAmount}
-                    onChange={(e) => {
-                      setCustomAmount(e.target.value);
-                      setAmount("");
-                    }}
-                    className="pl-9 bg-secondary border-border"
-                    min="1"
-                    step="1"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Methods */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-3 text-foreground">
-                  {t("donate.paymentMethod")}
-                </label>
-                <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-between" 
-                    onClick={() => handleDonate("buymeacoffee")}
-                  >
-                    <span>Buy Me a Coffee</span>
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-between" 
-                    onClick={() => handleDonate("tirikchilik")}
-                  >
-                    <span>Tirikchilik.uz (Test)</span>
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                {t("donate.secure")}
+          {/* Why Support Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            {/* Card 1 */}
+            <Card className="p-6 bg-card border-border hover:border-primary/50 transition-all hover:shadow-lg">
+              <Zap className="h-8 w-8 text-primary mb-3" />
+              <h3 className="text-lg font-bold mb-2 text-foreground">Keep It Running</h3>
+              <p className="text-sm text-muted-foreground">
+                Server costs, maintenance, and updates require ongoing support
               </p>
             </Card>
 
-            {/* Why Donate */}
-            <div className="space-y-6">
-              <Card className="p-6 bg-card border-border">
-                <h3 className="text-xl font-bold mb-4 text-foreground">{t("donate.whyTitle")}</h3>
-                <ul className="space-y-3 text-muted-foreground">
-                  <li className="flex items-start gap-3">
-                    <Heart className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{t("donate.why1")}</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Heart className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{t("donate.why2")}</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Heart className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{t("donate.why3")}</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Heart className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{t("donate.why4")}</span>
-                  </li>
-                </ul>
-              </Card>
+            {/* Card 2 */}
+            <Card className="p-6 bg-card border-border hover:border-primary/50 transition-all hover:shadow-lg">
+              <Shield className="h-8 w-8 text-primary mb-3" />
+              <h3 className="text-lg font-bold mb-2 text-foreground">Stay Independent</h3>
+              <p className="text-sm text-muted-foreground">
+                Your support helps us remain completely free and independent
+              </p>
+            </Card>
 
-              <Card className="p-6 bg-card border-border">
-                <h3 className="text-xl font-bold mb-4 text-foreground">{t("donate.promiseTitle")}</h3>
-                <p className="text-muted-foreground mb-4">
-                  {t("donate.promiseText")}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {t("donate.promiseDetail")}
-                </p>
-              </Card>
+            {/* Card 3 */}
+            <Card className="p-6 bg-card border-border hover:border-primary/50 transition-all hover:shadow-lg">
+              <Users className="h-8 w-8 text-primary mb-3" />
+              <h3 className="text-lg font-bold mb-2 text-foreground">Community Driven</h3>
+              <p className="text-sm text-muted-foreground">
+                Every contribution helps improve the service for everyone
+              </p>
+            </Card>
+          </div>
 
-              <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-                <h3 className="text-xl font-bold mb-2 text-foreground">{t("donate.thankYou")}</h3>
-                <p className="text-muted-foreground">
-                  {t("donate.thankYouText")}
-                </p>
-              </Card>
+          {/* Main Support Section */}
+          <Card className="p-12 bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30 group hover:border-primary transition-all duration-300 hover:shadow-xl hover:shadow-primary/20">
+            <div className="text-center mb-8">
+              <Coffee className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h2 className="text-3xl font-bold mb-3 text-foreground">Buy Me a Coffee</h2>
+              <p className="text-lg text-muted-foreground mb-8">
+                Support us on Buy Me a Coffee and help keep Streamly running
+              </p>
+              
+              <Button
+                onClick={handleSupport}
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg px-8 py-6 rounded-lg transition-all hover:shadow-xl"
+              >
+                <Coffee className="h-6 w-6 mr-2" />
+                Support Us Now
+                <ExternalLink className="h-6 w-6 ml-2" />
+              </Button>
+
+              <p className="text-sm text-muted-foreground mt-6">
+                You'll be redirected to Buy Me a Coffee where you can choose your support amount
+              </p>
             </div>
+          </Card>
+
+          {/* Benefits Section */}
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left Card */}
+            <Card className="p-8 bg-card border-border">
+              <h3 className="text-2xl font-bold mb-6 text-foreground">What Your Support Does</h3>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <span className="text-primary font-bold text-lg">✓</span>
+                  <div>
+                    <p className="font-semibold text-foreground">Keeps the Platform Running</p>
+                    <p className="text-sm text-muted-foreground">24/7 server uptime and maintenance</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary font-bold text-lg">✓</span>
+                  <div>
+                    <p className="font-semibold text-foreground">New Features & Channels</p>
+                    <p className="text-sm text-muted-foreground">Continuous improvements and expansions</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary font-bold text-lg">✓</span>
+                  <div>
+                    <p className="font-semibold text-foreground">Better Quality</p>
+                    <p className="text-sm text-muted-foreground">Improved streaming quality and reliability</p>
+                  </div>
+                </li>
+              </ul>
+            </Card>
+
+            {/* Right Card */}
+            <Card className="p-8 bg-gradient-to-br from-primary/20 to-primary/10 border-primary/30">
+              <h3 className="text-2xl font-bold mb-4 text-foreground">Thank You!</h3>
+              <p className="text-muted-foreground mb-6">
+                Every contribution, no matter the size, makes a huge difference. Your support directly helps us maintain and improve Streamly for everyone.
+              </p>
+              <div className="bg-background/50 rounded-lg p-4 border border-primary/20">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">Questions?</span> Feel free to reach out through Buy Me a Coffee. We'd love to hear from you!
+                </p>
+              </div>
+            </Card>
           </div>
         </div>
       </div>
